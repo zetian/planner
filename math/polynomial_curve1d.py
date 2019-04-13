@@ -74,28 +74,26 @@ class QuinticPolynomialCurve1d:
         self.coef_[0] = x0
         self.coef_[1] = dx0
         self.coef_[2] = ddx0/2.0
-
         p2 = p*p
         p3 = p*p2
-
         c0 = (x1 - 0.5*p2*ddx0 - dx0*p - x0)/p3
         c1 = (dx1 - ddx0*p - dx0)/p2
         c2 = (ddx1 - ddx0)/p
-        self.coef_[3] = 0.5*(20.0 * c0 - 8.0 * c1 + c2)
+        self.coef_[3] = 0.5*(20.0*c0 - 8.0*c1 + c2)
         self.coef_[4] = (-15.0*c0 + 7.0*c1 - c2)/p
         self.coef_[5] = (6.0*c0 - 3.0*c1 + 0.5*c2)/p2
 
 if __name__ == "__main__":
     # Test QuarticPolynomialCurve1d
-    start = [0, 0, 0]
-    end = [10, 0]
-    time_end = 20
+    start = [0, 10, 0]
+    end = [20, 0]
+    time_end = 8
     quartic_poly = QuarticPolynomialCurve1d(start, end, time_end)
     time = np.linspace(0, time_end, 200)
     pos = quartic_poly.Evaluate(0, time)
     vel = quartic_poly.Evaluate(1, time)
     accel = quartic_poly.Evaluate(2, time)
-    
+
     plt.figure()
     plt.subplot(311)
     plt.plot(time, pos, color = 'black')
@@ -137,5 +135,4 @@ if __name__ == "__main__":
     plt.xlabel('time(s)')
     plt.ylabel('Acceleration(m/s^2)')
     plt.xlim(0, time_end)
-
     plt.show()
