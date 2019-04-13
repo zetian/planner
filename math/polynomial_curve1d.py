@@ -10,7 +10,6 @@ class QuarticPolynomialCurve1d:
     start_ = []
     end_ = []
     coef_ = [None]*5
-    # time_span_
 
     def __init__(self, start, end, param):
         self.start_ = start
@@ -71,7 +70,6 @@ class QuinticPolynomialCurve1d:
             return 120*self.coef_[5]
         return 0
 
-
     def ComputeCoefficients(self, x0, dx0, ddx0, x1, dx1, ddx1, p):
         self.coef_[0] = x0
         self.coef_[1] = dx0
@@ -87,19 +85,17 @@ class QuinticPolynomialCurve1d:
         self.coef_[4] = (-15.0*c0 + 7.0*c1 - c2)/p
         self.coef_[5] = (6.0*c0 - 3.0*c1 + 0.5*c2)/p2
 
-
-
 if __name__ == "__main__":
+    # Test QuarticPolynomialCurve1d
     start = [0, 0, 0]
     end = [10, 0]
     time_end = 20
     quartic_poly = QuarticPolynomialCurve1d(start, end, time_end)
-    
     time = np.linspace(0, time_end, 200)
     pos = quartic_poly.Evaluate(0, time)
     vel = quartic_poly.Evaluate(1, time)
     accel = quartic_poly.Evaluate(2, time)
-
+    
     plt.figure()
     plt.subplot(311)
     plt.plot(time, pos, color = 'black')
@@ -116,9 +112,12 @@ if __name__ == "__main__":
     plt.ylabel('Acceleration(m/s^2)')
     plt.xlim(0, time_end) 
 
+    # Test QuinticPolynomialCurve1d
     start = [0, 0, 0]
     end = [10, 0, 0]
+    time_end = 20
     quintic_poly = QuinticPolynomialCurve1d(start, end, time_end)
+    time = np.linspace(0, time_end, 200)
     pos = quintic_poly.Evaluate(0, time)
     vel = quintic_poly.Evaluate(1, time)
     accel = quintic_poly.Evaluate(2, time)
