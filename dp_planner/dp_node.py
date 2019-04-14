@@ -8,9 +8,12 @@ from polynomial_curve1d import *
 
 class DPNode:
     def __init__(self, s, l, t):
-        self.s_ = s
-        self.l_ = l
-        self.t_ = t
+        self.s = s
+        self.l = l
+        self.t = t
+
+
+
 
 
 # Test QuarticPolynomialCurve1d
