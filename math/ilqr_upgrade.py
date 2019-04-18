@@ -75,9 +75,12 @@ class iterative_LQR_quadratic_cost:
         theta = x[2]
         v = u[0]
         curvature = u[1]
+        # df_du = np.array([ [np.cos(theta), 0.0],
+        #                    [np.sin(theta), 0.0],
+        #                    [curvature, v ]])*self.dt
         df_du = np.array([ [np.cos(theta), 0.0],
                            [np.sin(theta), 0.0],
-                           [curvature, v ]])*self.dt
+                           [0.0, 1.0 ]])*self.dt
         return df_du
 
     def compute_dl_dx(self, x, xr):
@@ -194,7 +197,7 @@ class iterative_LQR_quadratic_cost:
 if __name__ == '__main__':
 
     
-    ntimesteps = 200
+    ntimesteps = 1000
     target_state_sequence = np.zeros((3, ntimesteps))
     noisy_target_sequence = np.zeros((3, ntimesteps))
     dt = 0.2
@@ -208,11 +211,13 @@ if __name__ == '__main__':
         noisy_target_sequence[1,i] = target_state_sequence[1, i] + random.uniform(0, 1)
         noisy_target_sequence[2,i] = target_state_sequence[2, i] + random.uniform(0, 1)
 
-    myiLQR = iterative_LQR_quadratic_cost(noisy_target_sequence, dt)
+    myiLQR = iterative_LQR_quadratic_cost(target_state_sequence, dt)
+    # myiLQR = iterative_LQR_quadratic_cost(noisy_target_sequence, dt)
     for i in range(myiLQR.prediction_horizon-1):
         myiLQR.input_sequence[0,i] = 0.7
         myiLQR.input_sequence[1,i] = (target_state_sequence[2,i+1]-target_state_sequence[2,i])/dt
 
+    
     myiLQR(show_conv = False)
 
     pl.figure(figsize=(8*1.1, 6*1.1))
@@ -225,15 +230,15 @@ if __name__ == '__main__':
     pl.ylabel('y (meters)')
     pl.legend(fancybox=True, framealpha=0.2)
 
-    # pl.figure(figsize=(8*1.1, 6*1.1))
-    # pl.suptitle('iLQR: inputs vs. time.  ')
+    pl.figure(figsize=(8*1.1, 6*1.1))
+    pl.suptitle('iLQR: inputs vs. time.  ')
 
-    # pl.plot(myiLQR.input_sequence[0,:], '-b', linewidth=1.0)
-    # pl.grid('on')
-    # # pl.xlabel('x (meters)')
-    # pl.ylabel('speed input')
-    # pl.legend(fancybox=True, framealpha=0.2)
-    # pl.tight_layout()
+    pl.plot(myiLQR.input_sequence[0,:], '-b', linewidth=1.0)
+    pl.grid('on')
+    # pl.xlabel('x (meters)')
+    pl.ylabel('speed input')
+    pl.legend(fancybox=True, framealpha=0.2)
+    pl.tight_layout()
 
 
     pl.show()
