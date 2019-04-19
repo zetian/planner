@@ -4,6 +4,7 @@ import random
 import pylab as pl
 from numpy.linalg import inv
 from scipy.integrate import odeint
+from matplotlib import pyplot as plt
 
 
 "iterative LQR with Quadratic cost"
@@ -212,6 +213,14 @@ if __name__ == '__main__':
     for i in range(myiLQR.prediction_horizon-1):
         myiLQR.input_sequence[0,i] = 0.7
         myiLQR.input_sequence[1,i] = (target_state_sequence[2,i+1]-target_state_sequence[2,i])/dt
+
+    init_sequence = np.zeros((3, ntimesteps))
+    for i in range(1, myiLQR.prediction_horizon):
+        init_sequence[:,i] = myiLQR.model_f(init_sequence[:,i-1], myiLQR.input_sequence[:,i-1])
+        
+    plt.figure()
+    plt.plot(init_sequence[0,:], init_sequence[1,:], '--',linewidth=1.5, label = 'init state')
+    plt.show()
 
     myiLQR(show_conv = False)
 
