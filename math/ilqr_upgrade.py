@@ -211,7 +211,7 @@ if __name__ == '__main__':
     ntimesteps = 100
     target_state_sequence = np.zeros((4, ntimesteps))
     noisy_target_sequence = np.zeros((4, ntimesteps))
-    # v_sequence = np.zeros(ntimesteps)
+    v_sequence = np.zeros(ntimesteps)
     dt = 0.2
     v = 1.0
     curv = 0.1
@@ -230,35 +230,18 @@ if __name__ == '__main__':
     vel = quartic_poly.Evaluate(1, time_list)
     accel = quartic_poly.Evaluate(2, time_list)
 
-    plt.figure()
-    plt.subplot(311)
-    plt.plot(time_list, pos, color = 'black')
-    plt.title('Quartic Polynomial Curve')
-    plt.ylabel('Position(m)')
-    plt.xlim(0, poly_time) 
-    plt.subplot(312)
-    plt.plot(time_list, vel, color = 'red')
-    plt.ylabel('Velocity(m/s)')
-    plt.xlim(0, poly_time) 
-    plt.subplot(313)
-    plt.plot(time_list, accel)
-    plt.xlabel('time(s)')
-    plt.ylabel('Acceleration(m/s^2)')
-    plt.xlim(0, poly_time) 
-
+    # Use quartic_poly for speed profile
     v_sequence[0:vel.size] = vel
 
-    # for i in range(rest_num_v):
-    #     vel
 
-    # for i in range(1, ntimesteps):
+    # for i in range(40, ntimesteps):
     #     if v_sequence[i - 1] > v_max:
     #         a = 0
     #     v_sequence[i] = v_sequence[i - 1] + a*dt
 
-    plt.figure()
-    plt.plot(v_sequence)
-    plt.show()
+    # plt.figure()
+    # plt.plot(v_sequence)
+    # plt.show()
 
     for i in range(1, ntimesteps):
         target_state_sequence[0,i] = target_state_sequence[0,i-1] + np.cos(target_state_sequence[3,i-1])*dt*v_sequence[i - 1]
@@ -300,20 +283,21 @@ if __name__ == '__main__':
     pl.figure(figsize=(8*1.1, 6*1.1))
     pl.suptitle('iLQR: state vs. time.  ')
 
-    pl.plot(myiLQR.state_sequence[2,:], '-b', linewidth=1.0)
-    pl.plot(myiLQR.state_sequence[3,:], '-r', linewidth=1.0)
-
+    pl.plot(myiLQR.state_sequence[2,:], '-b', linewidth=1.0, label='speed')
+    # pl.plot(myiLQR.state_sequence[3,:], '-r', linewidth=1.0, label='yaw')
+    pl.plot(v_sequence, '-r', linewidth=1.0, label='target speed')
+    
     pl.grid('on')
     # pl.xlabel('x (meters)')
-    pl.ylabel('speed and yaw')
+    pl.ylabel('speed')
     pl.legend(fancybox=True, framealpha=0.2)
     pl.tight_layout()
 
     pl.figure(figsize=(8*1.1, 6*1.1))
     pl.suptitle('iLQR: inputs vs. time.  ')
 
-    pl.plot(myiLQR.input_sequence[0,:], '-b', linewidth=1.0)
-    pl.plot(myiLQR.input_sequence[1,:], '-r', linewidth=1.0)
+    pl.plot(myiLQR.input_sequence[0,:], '-b', linewidth=1.0, label='Acceleration')
+    pl.plot(myiLQR.input_sequence[1,:], '-r', linewidth=1.0, label='turning rate')
     pl.grid('on')
     # pl.xlabel('x (meters)')
     pl.ylabel('acceleration and turning rate input')
