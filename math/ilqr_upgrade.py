@@ -5,6 +5,7 @@ import pylab as pl
 from numpy.linalg import inv
 from scipy.integrate import odeint
 from matplotlib import pyplot as plt
+from polynomial_curve1d import *
 
 
 "iterative LQR with Quadratic cost"
@@ -33,7 +34,7 @@ class iterative_LQR_quadratic_cost:
     def set_params(self):
         self.n_states = 4
         self.m_inputs = 2
-        self.Q  = np.diag([5.0, 5.0, 10.0, 0.0])
+        self.Q  = np.diag([5.0, 5.0, 1000.0, 0.0])
         self.R  = np.diag([1000.0, 1000.0])
         self.Qf = 100*self.Q #100*np.diag( [1.0, 1.0, 1.0] )
         self.maxIter = 30
@@ -207,32 +208,65 @@ class iterative_LQR_quadratic_cost:
 if __name__ == '__main__':
 
     
-    ntimesteps = 200
+    ntimesteps = 100
     target_state_sequence = np.zeros((4, ntimesteps))
     noisy_target_sequence = np.zeros((4, ntimesteps))
-    v_sequence = np.zeros(ntimesteps)
+    # v_sequence = np.zeros(ntimesteps)
     dt = 0.2
     v = 1.0
     curv = 0.1
 
-    a = 0.3
-    v_max = 1
-    for i in range(1, ntimesteps):
-        if v_sequence[i - 1] > v_max:
-            a = 0
-        v_sequence[i] = v_sequence[i - 1] + a*dt
+    a = 1.5
+    v_max = 11
 
-    # plt.figure()
-    # plt.plot(v_sequence)
-    # plt.show()
+    v_sequence = np.ones(ntimesteps)*v_max
+
+    poly_start = [0, 0, 0]
+    poly_end = [v_max, 0]
+    poly_time = 20
+    quartic_poly = QuarticPolynomialCurve1d(poly_start, poly_end, poly_time)
+    time_list = np.linspace(0, poly_time, int(poly_time/dt))
+    pos = quartic_poly.Evaluate(0, time_list)
+    vel = quartic_poly.Evaluate(1, time_list)
+    accel = quartic_poly.Evaluate(2, time_list)
+
+    plt.figure()
+    plt.subplot(311)
+    plt.plot(time_list, pos, color = 'black')
+    plt.title('Quartic Polynomial Curve')
+    plt.ylabel('Position(m)')
+    plt.xlim(0, poly_time) 
+    plt.subplot(312)
+    plt.plot(time_list, vel, color = 'red')
+    plt.ylabel('Velocity(m/s)')
+    plt.xlim(0, poly_time) 
+    plt.subplot(313)
+    plt.plot(time_list, accel)
+    plt.xlabel('time(s)')
+    plt.ylabel('Acceleration(m/s^2)')
+    plt.xlim(0, poly_time) 
+
+    v_sequence[0:vel.size] = vel
+
+    # for i in range(rest_num_v):
+    #     vel
+
+    # for i in range(1, ntimesteps):
+    #     if v_sequence[i - 1] > v_max:
+    #         a = 0
+    #     v_sequence[i] = v_sequence[i - 1] + a*dt
+
+    plt.figure()
+    plt.plot(v_sequence)
+    plt.show()
 
     for i in range(1, ntimesteps):
         target_state_sequence[0,i] = target_state_sequence[0,i-1] + np.cos(target_state_sequence[3,i-1])*dt*v_sequence[i - 1]
         target_state_sequence[1,i] = target_state_sequence[1,i-1] + np.sin(target_state_sequence[3,i-1])*dt*v_sequence[i - 1]
         target_state_sequence[2,i] = v_sequence[i]
         target_state_sequence[3,i] = target_state_sequence[3,i-1] + curv*dt
-        noisy_target_sequence[0,i] = target_state_sequence[0, i] + random.uniform(0, 1.0)
-        noisy_target_sequence[1,i] = target_state_sequence[1, i] + random.uniform(0, 1.0)
+        noisy_target_sequence[0,i] = target_state_sequence[0, i] + random.uniform(0, 5.0)
+        noisy_target_sequence[1,i] = target_state_sequence[1, i] + random.uniform(0, 5.0)
         noisy_target_sequence[2,i] = target_state_sequence[2, i]
         noisy_target_sequence[3,i] = target_state_sequence[3, i] + random.uniform(0, 1.0)
         
@@ -251,7 +285,7 @@ if __name__ == '__main__':
     # plt.plot(init_sequence[0,:], init_sequence[1,:], '--',linewidth=1.5, label = 'init state')
     # plt.show()
     
-    myiLQR(show_conv = True)
+    myiLQR(show_conv = False)
 
     pl.figure(figsize=(8*1.1, 6*1.1))
     pl.suptitle('iLQR: 2D, x and y.  ')
