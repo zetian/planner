@@ -34,7 +34,7 @@ class iterative_LQR_quadratic_cost:
         self.n_states = 4
         self.m_inputs = 2
         self.Q  = np.diag([5.0, 5.0, 10.0, 0.0])
-        self.R  = np.diag([10.0, 100.0])
+        self.R  = np.diag([1000.0, 1000.0])
         self.Qf = 100*self.Q #100*np.diag( [1.0, 1.0, 1.0] )
         self.maxIter = 30
         self.LM_parameter= 0.0
@@ -207,7 +207,7 @@ class iterative_LQR_quadratic_cost:
 if __name__ == '__main__':
 
     
-    ntimesteps = 100
+    ntimesteps = 200
     target_state_sequence = np.zeros((4, ntimesteps))
     noisy_target_sequence = np.zeros((4, ntimesteps))
     v_sequence = np.zeros(ntimesteps)
@@ -231,10 +231,10 @@ if __name__ == '__main__':
         target_state_sequence[1,i] = target_state_sequence[1,i-1] + np.sin(target_state_sequence[3,i-1])*dt*v_sequence[i - 1]
         target_state_sequence[2,i] = v_sequence[i]
         target_state_sequence[3,i] = target_state_sequence[3,i-1] + curv*dt
-        noisy_target_sequence[0,i] = target_state_sequence[0, i] + random.uniform(0, 0.0)
-        noisy_target_sequence[1,i] = target_state_sequence[1, i] + random.uniform(0, 0.0)
+        noisy_target_sequence[0,i] = target_state_sequence[0, i] + random.uniform(0, 1.0)
+        noisy_target_sequence[1,i] = target_state_sequence[1, i] + random.uniform(0, 1.0)
         noisy_target_sequence[2,i] = target_state_sequence[2, i]
-        noisy_target_sequence[2,i] = target_state_sequence[3, i] + random.uniform(0, 0.5)
+        noisy_target_sequence[3,i] = target_state_sequence[3, i] + random.uniform(0, 1.0)
         
 
     # myiLQR = iterative_LQR_quadratic_cost(target_state_sequence, dt)
