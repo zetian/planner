@@ -125,7 +125,7 @@ class iterative_LQR_quadratic_cost:
             for i in range(0, self.prediction_horizon-1):
                 self.input_sequence[:, i] = self.input_sequence[:, i] + alpha*np.reshape(self.k_sequence[i,:,:], (-1,)) + np.reshape(
                                                   np.dot(self.K_sequence[i,:,:], np.reshape(self.state_sequence[:,i] - prev_state_sequence[:,i], (-1,1)) ), (-1,))
-                self.input_sequence[0,i] = min(max(self.input_sequence[0,i], -3), 3)
+                self.input_sequence[0,i] = min(max(self.input_sequence[0,i], -1.5), 1.5)
                 self.input_sequence[1,i] = min(max(self.input_sequence[1,i], -self._curvature_limit), self._curvature_limit)
                 self.state_sequence[:,i+1] = self.model_f(self.state_sequence[:,i], self.input_sequence[:,i])
             cost = self.cost()
