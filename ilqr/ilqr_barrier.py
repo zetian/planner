@@ -18,7 +18,7 @@ class iterative_LQR_quadratic_cost:
     Iterative Linear Quadratic Regulator Design for Nonlinear Biological Movement Systems
     https://homes.cs.washington.edu/~todorov/papers/LiICINCO04.pdf
     Constrained iterative LQR for on-road autonomous driving motion planning
-    
+
     cost function: x'Qx + u'Ru
     """
 
@@ -45,7 +45,7 @@ class iterative_LQR_quadratic_cost:
         self.LM_parameter= 0.0
         self.state_sequence = np.zeros((self.n_states, self.prediction_horizon))
         self.input_sequence= np.zeros((self.m_inputs, self.prediction_horizon - 1))
-        self.obstacle_weight = 0.1
+        self.obstacle_weight = 0.09
         self.obs_list = []
     
     def set_obstacles(self, obs):
@@ -258,19 +258,19 @@ if __name__ == '__main__':
     ntimesteps = 300
     target_state_sequence = np.zeros((4, ntimesteps))
     noisy_target_sequence = np.zeros((4, ntimesteps))
-    v_sequence = np.zeros(ntimesteps)
+    v_sequence = np.zeros(2*ntimesteps)
     dt = 0.2
     v = 1.0
     curv = 0.1
 
     a = 1.5
-    v_max = 11
+    v_max = 1
 
-    v_sequence = np.ones(ntimesteps)*v_max
+    v_sequence = -np.ones(2*ntimesteps)*v_max
 
     poly_start = [0, 0, 0]
     poly_end = [v_max, 0]
-    poly_time = 20
+    poly_time = 60
     quartic_poly = QuarticPolynomialCurve1d(poly_start, poly_end, poly_time)
     time_list = np.linspace(0, poly_time, int(poly_time/dt))
     pos = quartic_poly.Evaluate(0, time_list)
@@ -278,7 +278,7 @@ if __name__ == '__main__':
     accel = quartic_poly.Evaluate(2, time_list)
 
     # Use quartic_poly for speed profile
-    v_sequence[0:vel.size] = vel
+    # v_sequence[0:vel.size] = -vel
 
 
 
@@ -300,7 +300,7 @@ if __name__ == '__main__':
     dx = 0.1
     test_x = [0]
     test_y = [0]
-    for i in range(1, 300):
+    for i in range(1, ntimesteps):
         test_x.append(dx + test_x[-1])
         test_y.append(0)
     test_x.pop(0)
@@ -348,7 +348,7 @@ if __name__ == '__main__':
     ax = plt.gca()
     plt.suptitle('iLQR: 2D, x and y.  ')
     plt.axis('equal')
-    plt.plot(myiLQR.target_state_sequence[0,:], myiLQR.target_state_sequence[1,:], '--r', label = 'Target', linewidth=2)
+    plt.plot(myiLQR.target_state_sequence[0,:], myiLQR.target_state_sequence[1,:], '-+r', label = 'Target', linewidth=2)
     plt.plot(myiLQR.state_sequence[0,:], myiLQR.state_sequence[1,:], '-+b', label = 'iLQR', linewidth=1.0)
     for obs in obs_list:
         print(obs[0], obs[1])
