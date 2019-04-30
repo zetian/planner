@@ -17,6 +17,8 @@ class iterative_LQR_quadratic_cost:
     https://homes.cs.washington.edu/~todorov/papers/TassaIROS12.pdf
     Iterative Linear Quadratic Regulator Design for Nonlinear Biological Movement Systems
     https://homes.cs.washington.edu/~todorov/papers/LiICINCO04.pdf
+    Constrained iterative LQR for on-road autonomous driving motion planning
+    
     cost function: x'Qx + u'Ru
     """
 
