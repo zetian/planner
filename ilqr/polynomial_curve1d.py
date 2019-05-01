@@ -9,7 +9,7 @@ class QuarticPolynomialCurve1d:
     
     start = []
     end = []
-    coef = [None]*5
+    coef = [0.0]*5
 
     def __init__(self, start, end, param):
         self.start = start
@@ -38,8 +38,8 @@ class QuarticPolynomialCurve1d:
         b1 = ddx1 - ddx0
         p2 = p*p
         p3 = p2*p
-        self.coef[3] = (3*b0 - b1*p)/(3*p2)
-        self.coef[4] = (-2*b0 + b1*p)/(4*p3)
+        self.coef[3] = (3.0*b0 - b1*p)/(3.0*p2)
+        self.coef[4] = (-2.0*b0 + b1*p)/(4.0*p3)
 
 class QuinticPolynomialCurve1d:
     """

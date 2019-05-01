@@ -219,7 +219,7 @@ if __name__ == '__main__':
     a = 1.5
     v_max = 11
 
-    v_sequence = np.ones(ntimesteps)*v_max
+    # v_sequence = np.ones(ntimesteps)*v_max
 
     poly_start = [0, 0, 0]
     poly_end = [v_max, 0]
@@ -231,13 +231,15 @@ if __name__ == '__main__':
     accel = quartic_poly.Evaluate(2, time_list)
 
     # Use quartic_poly for speed profile
-    v_sequence[0:vel.size] = vel
+    # v_sequence[0:vel.size] = vel
+    # pl.figure()
+    # pl.plot(pos, '-r', linewidth=1.0, label='target speed')
+    # pl.show()
 
-
-    # for i in range(40, ntimesteps):
-    #     if v_sequence[i - 1] > v_max:
-    #         a = 0
-    #     v_sequence[i] = v_sequence[i - 1] + a*dt
+    for i in range(40, ntimesteps):
+        if v_sequence[i - 1] > v_max:
+            a = 0
+        v_sequence[i] = v_sequence[i - 1] + a*dt
 
     # plt.figure()
     # plt.plot(v_sequence)
