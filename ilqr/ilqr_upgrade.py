@@ -6,7 +6,7 @@ from numpy.linalg import inv
 from scipy.integrate import odeint
 from matplotlib import pyplot as plt
 from polynomial_curve1d import *
-
+import timeit
 
 "iterative LQR with Quadratic cost"
 class iterative_LQR_quadratic_cost:
@@ -270,7 +270,11 @@ if __name__ == '__main__':
     # plt.plot(init_sequence[0,:], init_sequence[1,:], '--',linewidth=1.5, label = 'init state')
     # plt.show()
     
+    start_time = timeit.default_timer()
     myiLQR(show_conv = False)
+    elapsed = timeit.default_timer() - start_time
+
+    print("elapsed time: ", elapsed)
 
     pl.figure(figsize=(8*1.1, 6*1.1))
     pl.suptitle('iLQR: 2D, x and y.  ')
