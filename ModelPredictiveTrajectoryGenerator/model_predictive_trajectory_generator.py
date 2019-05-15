@@ -133,11 +133,11 @@ def optimize_trajectory(target, k0, p):
 
 def test_optimize_trajectory():  # pragma: no cover
 
-    target = motion_model.State(x=10.0, y=2.0, yaw=np.deg2rad(20.0))
+    target = motion_model.State(x=6.0, y=2.0, yaw=np.deg2rad(20.0))
     # target = motion_model.State(x=5.0, y=2.0, yaw=np.deg2rad(90.0))
     k0 = 0.0
 
-    init_p = np.array([10.0, 0.0, 0.0]).reshape(3, 1)
+    init_p = np.array([6.0, 0.0, 0.0]).reshape(3, 1)
 
     x, y, yaw, p = optimize_trajectory(target, k0, init_p)
 
