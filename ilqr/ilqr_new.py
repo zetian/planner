@@ -30,7 +30,6 @@ class iterative_LQR_quadratic_cost:
         self.target_state_sequence = target_state_sequence
         self.prediction_horizon = self.target_state_sequence.shape[1]
         self.dt = dt
-        self._curvature_limit = 0.3
         self.converge = False
         self.system = sys
         self.n_states = sys.state_size
@@ -58,30 +57,22 @@ class iterative_LQR_quadratic_cost:
         return cost
 
     def compute_dl_dx(self, x, xr):
-        assert (
-            x.shape[0] == self.n_states), "state dimension inconsistent with setup."
         dl_dx = 2.0*np.dot(self.Q, x - xr)
         return dl_dx
 
     def compute_dl_dxdx(self, x, xr):
-        # assert (x.shape == (self.n_states,1)), "state dimension inconsistent with setup."
         dl_dxdx = 2.0 * self.Q
         return dl_dxdx
 
     def compute_dl_du(self, u):
-        assert (
-            u.shape[0] == self.m_inputs), "input dimension inconsistent with setup."
         dl_du = 2.0*np.dot(self.R, u)
         return dl_du
 
     def compute_dl_dudu(self, u):
-        # assert (u.shape == (self.m_inputs,1)), "input dimension inconsistent with setup."
         dl_dudu = 2.0*self.R
         return dl_dudu
 
     def compute_dl_dudx(self, x, u):
-        # assert (x.shape == (self.n_states,1)), "state dimension inconsistent with setup."
-        # assert (u.shape == (self.m_inputs,1)), "input dimension inconsistent with setup."
         dl_dudx = np.zeros((self.m_inputs, self.n_states))
         return dl_dudx
 
@@ -126,7 +117,7 @@ class iterative_LQR_quadratic_cost:
         dl_dxdx = self.compute_dl_dxdx(None, None)
         dl_dudu = self.compute_dl_dudu(None)
         dl_dudx = self.compute_dl_dudx(None, None)
-        for i in range(npts-2, -1, -1):
+        for i in range(npts - 2, -1, -1):
             df_du = self.system.compute_df_du(
                 self.state_sequence[:, i], self.input_sequence[:, i])
             df_dx = self.system.compute_df_dx(
@@ -174,7 +165,6 @@ class iterative_LQR_quadratic_cost:
                 break
             self.backward_pass()
             self.forward_pass()
-            # print (iteration)
             if show_conv:
                 pl.plot(self.state_sequence[0, :], self.state_sequence[1,
                                                                        :], '-', linewidth=0.5, label=str(iteration))
