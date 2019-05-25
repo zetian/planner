@@ -1,11 +1,8 @@
 import numpy as np
 import scipy
 import random
-import pylab as pl
 from numpy.linalg import inv
-from scipy.integrate import odeint
 from matplotlib import pyplot as plt
-from polynomial_curve1d import *
 import timeit
 from systems import Car
 
@@ -23,12 +20,12 @@ class iterative_LQR_quadratic_cost:
     cost function: x'Qx + u'Ru
     """
 
-    def __init__(self, sys, target_state_sequence, dt):
+    def __init__(self, sys, target_states, dt):
         """
         iLQR initilization
         """
-        self.target_state_sequence = target_state_sequence
-        self.prediction_horizon = self.target_state_sequence.shape[1]
+        self.target_states = target_states
+        self.prediction_horizon = self.target_states.shape[1]
         self.dt = dt
         self.converge = False
         self.system = sys
@@ -39,20 +36,20 @@ class iterative_LQR_quadratic_cost:
         self.Qf = sys.Q_f
         self.maxIter = 30
         self.LM_parameter = 0.0
-        self.state_sequence = np.zeros(
+        self.states = np.zeros(
             (self.n_states, self.prediction_horizon))
-        self.input_sequence = np.zeros(
+        self.inputs = np.zeros(
             (self.m_inputs, self.prediction_horizon - 1))
 
     def cost(self):
-        state_sequence_diff = self.state_sequence - self.target_state_sequence
+        states_diff = self.states - self.target_states
         cost = 0.0
         for i in range(self.prediction_horizon-1):
-            state = np.reshape(state_sequence_diff[:, i], (-1, 1))
-            control = np.reshape(self.input_sequence[:, i], (-1, 1))
+            state = np.reshape(states_diff[:, i], (-1, 1))
+            control = np.reshape(self.inputs[:, i], (-1, 1))
             cost += np.dot(np.dot(state.T, self.Q), state) + \
                 np.dot(np.dot(control.T, self.R), control)
-        state = np.reshape(state_sequence_diff[:, -1], (-1, 1))
+        state = np.reshape(states_diff[:, -1], (-1, 1))
         cost += np.dot(np.dot(state.T, self.Qf), state)
         return cost
 
@@ -77,20 +74,20 @@ class iterative_LQR_quadratic_cost:
         return dl_dudx
 
     def forward_pass(self):
-        prev_state_sequence = np.copy(self.state_sequence)
-        prev_input_sequence = np.copy(self.input_sequence)
+        prev_states = np.copy(self.states)
+        prev_inputs = np.copy(self.inputs)
         prev_cost = self.cost()
         alpha = 1.0
         while (True):
             for i in range(0, self.prediction_horizon-1):
-                self.input_sequence[:, i] = self.input_sequence[:, i] + alpha*np.reshape(self.k_sequence[i, :, :], (-1,)) + np.reshape(
-                    np.dot(self.K_sequence[i, :, :], np.reshape(self.state_sequence[:, i] - prev_state_sequence[:, i], (-1, 1))), (-1,))
+                self.inputs[:, i] = self.inputs[:, i] + alpha*np.reshape(self.k[i, :, :], (-1,)) + np.reshape(
+                    np.dot(self.K[i, :, :], np.reshape(self.states[:, i] - prev_states[:, i], (-1, 1))), (-1,))
                 if self.system.control_limited:
                     for j in range(self.m_inputs):
-                        self.input_sequence[j, i] = min(max(
-                            self.input_sequence[j, i], self.system.control_limit[j, 0]), self.system.control_limit[j, 1])
-                self.state_sequence[:, i+1] = self.system.model_f(
-                    self.state_sequence[:, i], self.input_sequence[:, i])
+                        self.inputs[j, i] = min(max(
+                            self.inputs[j, i], self.system.control_limit[j, 0]), self.system.control_limit[j, 1])
+                self.states[:, i+1] = self.system.model_f(
+                    self.states[:, i], self.inputs[:, i])
             cost = self.cost()
             if cost < prev_cost:
                 # print('cost decreased after this pass. learning_rate: ', alpha)
@@ -102,28 +99,28 @@ class iterative_LQR_quadratic_cost:
                 break
             else:
                 alpha /= 2.
-                self.state_sequence = np.copy(prev_state_sequence)
-                self.input_sequence = np.copy(prev_input_sequence)
+                self.states = np.copy(prev_states)
+                self.inputs = np.copy(prev_inputs)
 
     def backward_pass(self):
         npts = self.prediction_horizon
-        self.k_sequence = np.zeros((npts-1, self.m_inputs, 1))
-        self.K_sequence = np.zeros((npts-1, self.m_inputs, self.n_states))
+        self.k = np.zeros((npts-1, self.m_inputs, 1))
+        self.K = np.zeros((npts-1, self.m_inputs, self.n_states))
         Vx = 2.0 * \
             np.dot(
-                self.Qf, self.state_sequence[:, -1] - self.target_state_sequence[:, -1])
+                self.Qf, self.states[:, -1] - self.target_states[:, -1])
         Vxx = 2.0*self.Qf
         dl_dxdx = self.compute_dl_dxdx(None, None)
         dl_dudu = self.compute_dl_dudu(None)
         dl_dudx = self.compute_dl_dudx(None, None)
         for i in range(npts - 2, -1, -1):
             df_du = self.system.compute_df_du(
-                self.state_sequence[:, i], self.input_sequence[:, i])
+                self.states[:, i], self.inputs[:, i])
             df_dx = self.system.compute_df_dx(
-                self.state_sequence[:, i], self.input_sequence[:, i])
+                self.states[:, i], self.inputs[:, i])
             dl_dx = self.compute_dl_dx(
-                self.state_sequence[:, i], self.target_state_sequence[:, i])
-            dl_du = self.compute_dl_du(self.input_sequence[:, i])
+                self.states[:, i], self.target_states[:, i])
+            dl_du = self.compute_dl_du(self.inputs[:, i])
             Qx = dl_dx + np.dot(df_dx.T, Vx)
             Qu = dl_du + np.dot(df_du.T, Vx)
             Vxx_augmented = Vxx + self.LM_parameter * np.eye(self.n_states)
@@ -133,9 +130,8 @@ class iterative_LQR_quadratic_cost:
             Quu_inv = inv(Quu)
             k = -np.dot(Quu_inv, Qu)
             K = -np.dot(Quu_inv, Qux)
-            self.k_sequence[i, :, :] = np.reshape(k, (-1, 1), order='F')
-            self.K_sequence[i, :, :] = K
-
+            self.k[i, :, :] = np.reshape(k, (-1, 1), order='F')
+            self.K[i, :, :] = K
             Vx = Qx + np.dot(K.T, Qu)
             Vxx = Qxx + np.dot(K.T, Qux)
 
@@ -145,36 +141,33 @@ class iterative_LQR_quadratic_cost:
                 break
             self.backward_pass()
             self.forward_pass()
-        return self.state_sequence
+        return self.states
 
 
 if __name__ == '__main__':
     ntimesteps = 100
-    target_state_sequence = np.zeros((4, ntimesteps))
-    noisy_target_sequence = np.zeros((4, ntimesteps))
-    v_sequence = np.zeros(ntimesteps)
+    target_states = np.zeros((4, ntimesteps))
+    noisy_targets = np.zeros((4, ntimesteps))
+    ref_vel = np.zeros(ntimesteps)
     dt = 0.2
     curv = 0.1
     a = 1.5
     v_max = 11
     for i in range(40, ntimesteps):
-        if v_sequence[i - 1] > v_max:
+        if ref_vel[i - 1] > v_max:
             a = 0
-        v_sequence[i] = v_sequence[i - 1] + a*dt
+        ref_vel[i] = ref_vel[i - 1] + a*dt
     for i in range(1, ntimesteps):
-        target_state_sequence[0, i] = target_state_sequence[0, i-1] + \
-            np.cos(target_state_sequence[3, i-1])*dt*v_sequence[i - 1]
-        target_state_sequence[1, i] = target_state_sequence[1, i-1] + \
-            np.sin(target_state_sequence[3, i-1])*dt*v_sequence[i - 1]
-        target_state_sequence[2, i] = v_sequence[i]
-        target_state_sequence[3, i] = target_state_sequence[3, i-1] + curv*dt
-        noisy_target_sequence[0, i] = target_state_sequence[0,
-                                                            i] + random.uniform(0, 5.0)
-        noisy_target_sequence[1, i] = target_state_sequence[1,
-                                                            i] + random.uniform(0, 5.0)
-        noisy_target_sequence[2, i] = target_state_sequence[2, i]
-        noisy_target_sequence[3, i] = target_state_sequence[3,
-                                                            i] + random.uniform(0, 1.0)
+        target_states[0, i] = target_states[0, i-1] + \
+            np.cos(target_states[3, i-1])*dt*ref_vel[i - 1]
+        target_states[1, i] = target_states[1, i-1] + \
+            np.sin(target_states[3, i-1])*dt*ref_vel[i - 1]
+        target_states[2, i] = ref_vel[i]
+        target_states[3, i] = target_states[3, i-1] + curv*dt
+        noisy_targets[0, i] = target_states[0, i] + random.uniform(0, 5.0)
+        noisy_targets[1, i] = target_states[1, i] + random.uniform(0, 5.0)
+        noisy_targets[2, i] = target_states[2, i]
+        noisy_targets[3, i] = target_states[3, i] + random.uniform(0, 1.0)
 
     car_system = Car()
     car_system.set_dt(dt)
@@ -182,13 +175,13 @@ if __name__ == '__main__':
         np.diag([5.0, 5.0, 1000.0, 0.0]), np.diag([1000.0, 1000.0]))
     car_system.set_control_limit(np.array([[-1.5, 1.5], [-0.3, 0.3]]))
     myiLQR = iterative_LQR_quadratic_cost(
-        car_system, noisy_target_sequence, dt)
+        car_system, noisy_targets, dt)
 
     for i in range(myiLQR.prediction_horizon-1):
-        myiLQR.input_sequence[0, i] = (
-            target_state_sequence[2, i + 1] - target_state_sequence[2, i])/dt
-        myiLQR.input_sequence[1, i] = (
-            target_state_sequence[3, i+1]-target_state_sequence[3, i])/dt
+        myiLQR.inputs[0, i] = (
+            target_states[2, i + 1] - target_states[2, i])/dt
+        myiLQR.inputs[1, i] = (
+            target_states[3, i+1]-target_states[3, i])/dt
 
     start_time = timeit.default_timer()
     myiLQR()
@@ -196,32 +189,24 @@ if __name__ == '__main__':
     print("elapsed time: ", elapsed)
 
     plt.figure(figsize=(8*1.1, 6*1.1))
-    plt.suptitle('iLQR: 2D, x and y.  ')
+    plt.title('iLQR: 2D, x and y.  ')
     plt.axis('equal')
-    plt.plot(myiLQR.target_state_sequence[0, :],
-             myiLQR.target_state_sequence[1, :], '--r', label='Target', linewidth=2)
-    plt.plot(myiLQR.state_sequence[0, :], myiLQR.state_sequence[1,
-                                                                :], '-+b', label='iLQR', linewidth=1.0)
-    plt.grid('on')
+    plt.plot(myiLQR.target_states[0, :],
+             myiLQR.target_states[1, :], '--r', label='Target', linewidth=2)
+    plt.plot(myiLQR.states[0, :], myiLQR.states[1, :],
+             '-+b', label='iLQR', linewidth=1.0)
     plt.xlabel('x (meters)')
     plt.ylabel('y (meters)')
-    plt.legend(fancybox=True, framealpha=0.2)
     plt.figure(figsize=(8*1.1, 6*1.1))
-    plt.suptitle('iLQR: state vs. time.  ')
-    plt.plot(myiLQR.state_sequence[2, :], '-b', linewidth=1.0, label='speed')
-    plt.plot(v_sequence, '-r', linewidth=1.0, label='target speed')
-    plt.grid('on')
+    plt.title('iLQR: state vs. time.  ')
+    plt.plot(myiLQR.states[2, :], '-b', linewidth=1.0, label='speed')
+    plt.plot(ref_vel, '-r', linewidth=1.0, label='target speed')
     plt.ylabel('speed')
-    plt.legend(fancybox=True, framealpha=0.2)
-    plt.tight_layout()
     plt.figure(figsize=(8*1.1, 6*1.1))
-    plt.suptitle('iLQR: inputs vs. time.  ')
-    plt.plot(myiLQR.input_sequence[0, :], '-b',
+    plt.title('iLQR: inputs vs. time.  ')
+    plt.plot(myiLQR.inputs[0, :], '-b',
              linewidth=1.0, label='Acceleration')
-    plt.plot(myiLQR.input_sequence[1, :], '-r',
+    plt.plot(myiLQR.inputs[1, :], '-r',
              linewidth=1.0, label='turning rate')
-    plt.grid('on')
     plt.ylabel('acceleration and turning rate input')
-    plt.legend(fancybox=True, framealpha=0.2)
-    plt.tight_layout()
     plt.show()
