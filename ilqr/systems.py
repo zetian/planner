@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class System:
     def __init__(self, state_size, control_size):
         self.control_limited = False
@@ -21,6 +22,7 @@ class System:
         self.control_limited = True
         self.control_limit = limit
 
+
 class Car(System):
     def __init__(self):
         super().__init__(4, 2)
@@ -40,12 +42,11 @@ class Car(System):
         return np.reshape(x_next, (-1,))
 
     def compute_df_dx(self, x, u):
-        assert(
-            x.shape[0] == self.state_size), "state dimension inconsistent with setup."
         theta = x[3]
         v = x[2]
         df_dx = np.array([[1.0, 0.0, np.cos(theta)*self.dt, -np.sin(theta)*v*self.dt],
-                          [0.0, 1.0, np.sin(theta)*self.dt, np.cos(theta)*v*self.dt],
+                          [0.0, 1.0, np.sin(theta)*self.dt,
+                           np.cos(theta)*v*self.dt],
                           [0.0, 0.0,  1.0, 0.0],
                           [0.0, 0.0,  0.0, 1.0]
                           ])
@@ -58,34 +59,38 @@ class Car(System):
                           [0.0, 1.0]])*self.dt
         return df_du
 
+
 class DubinsCar(System):
     def __init__(self):
         super().__init__(3, 2)
         self.dt = 0.2
+
     def model_f(self, x, u):
-        assert (x.shape == (self.state_size,1) or x.shape == (self.state_size,) ), "state dimension inconsistent with setup."
-        assert (u.shape == (self.control_size,1) or u.shape == (self.control_size,) ), "input dimension inconsistent with setup."
+        assert (x.shape == (self.state_size, 1) or x.shape == (
+            self.state_size,)), "state dimension inconsistent with setup."
+        assert (u.shape == (self.control_size, 1) or u.shape == (
+            self.control_size,)), "input dimension inconsistent with setup."
         theta = x[2]
         v = u[0]
         curvature = u[1]
-        x_next = np.reshape(x, (-1,1), order = 'F') + np.array( [ [v*np.cos(theta)], [v*np.sin(theta)], [v*curvature] ] )*self.dt
+        x_next = np.reshape(x, (-1, 1), order='F') + np.array(
+            [[v*np.cos(theta)], [v*np.sin(theta)], [v*curvature]])*self.dt
         return np.reshape(x_next, (-1,))
+
     def compute_df_dx(self, x, u):
-        assert (x.shape[0] == self.state_size), "state dimension inconsistent with setup."
         theta = x[2]
         v = u[0]
-        df_dx = np.array([ [1.0, 0.0,  -np.sin(theta)*v*self.dt],
-                           [0.0, 1.0,   np.cos(theta)*v*self.dt],
-                           [0.0, 0.0,  1.0] 
-                        ])
+        df_dx = np.array([[1.0, 0.0,  -np.sin(theta)*v*self.dt],
+                          [0.0, 1.0,   np.cos(theta)*v*self.dt],
+                          [0.0, 0.0,  1.0]
+                          ])
         return df_dx
 
     def compute_df_du(self, x, u):
-        # assert (u.shape == (self.m_inputs,1)), "state dimension inconsistent with setup."
         theta = x[2]
         v = u[0]
         curvature = u[1]
-        df_du = np.array([ [np.cos(theta), 0.0],
-                           [np.sin(theta), 0.0],
-                           [curvature, v ]])*self.dt
+        df_du = np.array([[np.cos(theta), 0.0],
+                          [np.sin(theta), 0.0],
+                          [curvature, v]])*self.dt
         return df_du
