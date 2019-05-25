@@ -24,7 +24,7 @@ class System:
 class Car(System):
     def __init__(self):
         super().__init__(4, 2)
-        self.dt = 0.05
+        self.dt = 0.2
 
     def model_f(self, x, u):
         assert(x.shape == (self.state_size, 1) or x.shape == (
@@ -60,8 +60,8 @@ class Car(System):
 
 class DubinsCar(System):
     def __init__(self):
-        super().__init__(4, 2)
-        self.dt = 0.05
+        super().__init__(3, 2)
+        self.dt = 0.2
     def model_f(self, x, u):
         assert (x.shape == (self.state_size,1) or x.shape == (self.state_size,) ), "state dimension inconsistent with setup."
         assert (u.shape == (self.control_size,1) or u.shape == (self.control_size,) ), "input dimension inconsistent with setup."
