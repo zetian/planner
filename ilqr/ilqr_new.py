@@ -93,12 +93,12 @@ class iterative_LQR_quadratic_cost:
                     self.state_sequence[:, i], self.input_sequence[:, i])
             cost = self.cost()
             if cost < prev_cost:
-                print('cost decreased after this pass. learning_rate: ', alpha)
+                # print('cost decreased after this pass. learning_rate: ', alpha)
                 break
             elif alpha < 1e-4:
                 self.converge = True
-                print(
-                    'learning_rate below threshold. Unable to reduce cost. learning_rate: ', alpha)
+                # print(
+                #     'learning_rate below threshold. Unable to reduce cost. learning_rate: ', alpha)
                 break
             else:
                 alpha /= 2.
@@ -113,7 +113,6 @@ class iterative_LQR_quadratic_cost:
             np.dot(
                 self.Qf, self.state_sequence[:, -1] - self.target_state_sequence[:, -1])
         Vxx = 2.0*self.Qf
-
         dl_dxdx = self.compute_dl_dxdx(None, None)
         dl_dudu = self.compute_dl_dudu(None)
         dl_dudx = self.compute_dl_dudx(None, None)
@@ -125,14 +124,12 @@ class iterative_LQR_quadratic_cost:
             dl_dx = self.compute_dl_dx(
                 self.state_sequence[:, i], self.target_state_sequence[:, i])
             dl_du = self.compute_dl_du(self.input_sequence[:, i])
-
             Qx = dl_dx + np.dot(df_dx.T, Vx)
             Qu = dl_du + np.dot(df_du.T, Vx)
             Vxx_augmented = Vxx + self.LM_parameter * np.eye(self.n_states)
             Qxx = dl_dxdx + np.dot(np.dot(df_dx.T, Vxx_augmented), df_dx)
             Quu = dl_dudu + np.dot(np.dot(df_du.T, Vxx_augmented), df_du)
             Qux = dl_dudx + np.dot(np.dot(df_du.T, Vxx_augmented), df_dx)
-
             Quu_inv = inv(Quu)
             k = -np.dot(Quu_inv, Qu)
             K = -np.dot(Quu_inv, Qux)
@@ -141,82 +138,29 @@ class iterative_LQR_quadratic_cost:
 
             Vx = Qx + np.dot(K.T, Qu)
             Vxx = Qxx + np.dot(K.T, Qux)
-        # print 'One backward pass completed.'
 
-    def __call__(self, show_conv=False):
-        "iterative LQR with quadratic cost function"
-        assert (self.target_state_sequence is not None), "trajectory is not set yet."
-        self.state_sequence[:, 0] = self.target_state_sequence[:, 0]
-        for i in range(1, self.prediction_horizon):
-            self.state_sequence[:, i] = self.system.model_f(
-                self.state_sequence[:, i-1], self.input_sequence[:, i-1])
-        if show_conv:
-            pl.plot(
-                self.target_state_sequence[0, :], self.target_state_sequence[1, :], 'r--+', linewidth=2.0, label='Target')
-            pl.plot(
-                self.state_sequence[0, :], self.state_sequence[1, :], '--', linewidth=1.5, label='iLQR')
-            pl.grid('on')
-            pl.axis('equal')
-            pl.xlabel('x')
-            pl.ylabel('y')
-
-        for iteration in range(self.maxIter):
+    def __call__(self):
+        for iter in range(self.maxIter):
             if (self.converge):
                 break
             self.backward_pass()
             self.forward_pass()
-            if show_conv:
-                pl.plot(self.state_sequence[0, :], self.state_sequence[1,
-                                                                       :], '-', linewidth=0.5, label=str(iteration))
-                pl.grid('on')
-                pl.xlabel('x')
-                pl.ylabel('y')
-                pl.legend(framealpha=0.5)
-                pl.pause(0.01)
-        # pl.show()
         return self.state_sequence
-        "iterative LQR with quadratic cost function ----------- end"
 
 
 if __name__ == '__main__':
-
     ntimesteps = 100
     target_state_sequence = np.zeros((4, ntimesteps))
     noisy_target_sequence = np.zeros((4, ntimesteps))
     v_sequence = np.zeros(ntimesteps)
     dt = 0.2
-    v = 1.0
     curv = 0.1
-
     a = 1.5
     v_max = 11
-
-    # v_sequence = np.ones(ntimesteps)*v_max
-
-    poly_start = [0, 0, 0]
-    poly_end = [v_max, 0]
-    poly_time = 20
-    quartic_poly = QuarticPolynomialCurve1d(poly_start, poly_end, poly_time)
-    time_list = np.linspace(0, poly_time, int(poly_time/dt))
-    pos = quartic_poly.Evaluate(0, time_list)
-    vel = quartic_poly.Evaluate(1, time_list)
-    accel = quartic_poly.Evaluate(2, time_list)
-
-    # Use quartic_poly for speed profile
-    # v_sequence[0:vel.size] = vel
-    # pl.figure()
-    # pl.plot(pos, '-r', linewidth=1.0, label='target speed')
-    # pl.show()
-
     for i in range(40, ntimesteps):
         if v_sequence[i - 1] > v_max:
             a = 0
         v_sequence[i] = v_sequence[i - 1] + a*dt
-
-    # plt.figure()
-    # plt.plot(v_sequence)
-    # plt.show()
-
     for i in range(1, ntimesteps):
         target_state_sequence[0, i] = target_state_sequence[0, i-1] + \
             np.cos(target_state_sequence[3, i-1])*dt*v_sequence[i - 1]
@@ -232,7 +176,6 @@ if __name__ == '__main__':
         noisy_target_sequence[3, i] = target_state_sequence[3,
                                                             i] + random.uniform(0, 1.0)
 
-    # myiLQR = iterative_LQR_quadratic_cost(target_state_sequence, dt)
     car_system = Car()
     car_system.set_dt(dt)
     car_system.set_cost(
@@ -241,63 +184,44 @@ if __name__ == '__main__':
     myiLQR = iterative_LQR_quadratic_cost(
         car_system, noisy_target_sequence, dt)
 
-    # myiLQR.set_system(car_system)
     for i in range(myiLQR.prediction_horizon-1):
         myiLQR.input_sequence[0, i] = (
             target_state_sequence[2, i + 1] - target_state_sequence[2, i])/dt
         myiLQR.input_sequence[1, i] = (
             target_state_sequence[3, i+1]-target_state_sequence[3, i])/dt
 
-    # init_sequence = np.zeros((4, ntimesteps))
-    # for i in range(1, myiLQR.prediction_horizon):
-    #     init_sequence[:,i] = myiLQR.model_f(init_sequence[:,i-1], myiLQR.input_sequence[:,i-1])
-
-    # plt.figure()
-    # plt.plot(init_sequence[0,:], init_sequence[1,:], '--',linewidth=1.5, label = 'init state')
-    # plt.show()
-
     start_time = timeit.default_timer()
-    myiLQR(show_conv=False)
+    myiLQR()
     elapsed = timeit.default_timer() - start_time
-
     print("elapsed time: ", elapsed)
 
-    pl.figure(figsize=(8*1.1, 6*1.1))
-    pl.suptitle('iLQR: 2D, x and y.  ')
-    pl.axis('equal')
-    pl.plot(myiLQR.target_state_sequence[0, :],
-            myiLQR.target_state_sequence[1, :], '--r', label='Target', linewidth=2)
-    pl.plot(myiLQR.state_sequence[0, :], myiLQR.state_sequence[1,
-                                                               :], '-+b', label='iLQR', linewidth=1.0)
-    pl.grid('on')
-    pl.xlabel('x (meters)')
-    pl.ylabel('y (meters)')
-    pl.legend(fancybox=True, framealpha=0.2)
-
-    pl.figure(figsize=(8*1.1, 6*1.1))
-    pl.suptitle('iLQR: state vs. time.  ')
-
-    pl.plot(myiLQR.state_sequence[2, :], '-b', linewidth=1.0, label='speed')
-    # pl.plot(myiLQR.state_sequence[3,:], '-r', linewidth=1.0, label='yaw')
-    pl.plot(v_sequence, '-r', linewidth=1.0, label='target speed')
-
-    pl.grid('on')
-    # pl.xlabel('x (meters)')
-    pl.ylabel('speed')
-    pl.legend(fancybox=True, framealpha=0.2)
-    pl.tight_layout()
-
-    pl.figure(figsize=(8*1.1, 6*1.1))
-    pl.suptitle('iLQR: inputs vs. time.  ')
-
-    pl.plot(myiLQR.input_sequence[0, :], '-b',
-            linewidth=1.0, label='Acceleration')
-    pl.plot(myiLQR.input_sequence[1, :], '-r',
-            linewidth=1.0, label='turning rate')
-    pl.grid('on')
-    # pl.xlabel('x (meters)')
-    pl.ylabel('acceleration and turning rate input')
-    pl.legend(fancybox=True, framealpha=0.2)
-    pl.tight_layout()
-
-    pl.show()
+    plt.figure(figsize=(8*1.1, 6*1.1))
+    plt.suptitle('iLQR: 2D, x and y.  ')
+    plt.axis('equal')
+    plt.plot(myiLQR.target_state_sequence[0, :],
+             myiLQR.target_state_sequence[1, :], '--r', label='Target', linewidth=2)
+    plt.plot(myiLQR.state_sequence[0, :], myiLQR.state_sequence[1,
+                                                                :], '-+b', label='iLQR', linewidth=1.0)
+    plt.grid('on')
+    plt.xlabel('x (meters)')
+    plt.ylabel('y (meters)')
+    plt.legend(fancybox=True, framealpha=0.2)
+    plt.figure(figsize=(8*1.1, 6*1.1))
+    plt.suptitle('iLQR: state vs. time.  ')
+    plt.plot(myiLQR.state_sequence[2, :], '-b', linewidth=1.0, label='speed')
+    plt.plot(v_sequence, '-r', linewidth=1.0, label='target speed')
+    plt.grid('on')
+    plt.ylabel('speed')
+    plt.legend(fancybox=True, framealpha=0.2)
+    plt.tight_layout()
+    plt.figure(figsize=(8*1.1, 6*1.1))
+    plt.suptitle('iLQR: inputs vs. time.  ')
+    plt.plot(myiLQR.input_sequence[0, :], '-b',
+             linewidth=1.0, label='Acceleration')
+    plt.plot(myiLQR.input_sequence[1, :], '-r',
+             linewidth=1.0, label='turning rate')
+    plt.grid('on')
+    plt.ylabel('acceleration and turning rate input')
+    plt.legend(fancybox=True, framealpha=0.2)
+    plt.tight_layout()
+    plt.show()
